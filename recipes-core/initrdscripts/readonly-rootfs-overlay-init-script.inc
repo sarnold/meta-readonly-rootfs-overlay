@@ -12,10 +12,10 @@ do_install() {
         install -d "${D}/media/rfs/rw"
 }
 
-FILES:${PN} += " /init /media/rfs"
+FILES_${PN} += " /init /media/rfs"
 
-QA_EMPTY_DIRS:remove = "/media"
-QA_EMPTY_DIRS:append = " \
+QA_EMPTY_DIRS_remove = "/media"
+QA_EMPTY_DIRS_append = " \
     /media/rfs/ro \
     /media/rfs/rw \
 "

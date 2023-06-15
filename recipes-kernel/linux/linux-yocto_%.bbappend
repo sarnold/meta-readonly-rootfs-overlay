@@ -1,1 +1,1 @@
-KERNEL_FEATURES:append = " features/overlayfs/overlayfs.scc"
+KERNEL_FEATURES_append = " features/overlayfs/overlayfs.scc"
