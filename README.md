@@ -85,7 +85,7 @@ other layers needed. e.g.:
 To add the script to your image, just add:
 
 ```
-  IMAGE_INSTALL_append = " initscripts-readonly-rootfs-overlay"
+  IMAGE_INSTALL:append = " initscripts-readonly-rootfs-overlay"
 ```
 
 to your `local.conf` or image recipe. Or use
