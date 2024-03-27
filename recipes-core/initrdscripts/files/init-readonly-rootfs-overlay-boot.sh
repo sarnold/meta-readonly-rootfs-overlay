@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck shell=dash
 
 # Enable strict shell mode
 set -euo pipefail
@@ -6,7 +7,6 @@ set -euo pipefail
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 MOUNT="/bin/mount"
-UMOUNT="/bin/umount"
 
 INIT="/sbin/init"
 ROOT_ROINIT="/sbin/init"
@@ -35,17 +35,17 @@ early_setup() {
 }
 
 read_args() {
-	[ -z "${CMDLINE+x}" ] && CMDLINE=`cat /proc/cmdline`
+	[ -z "${CMDLINE+x}" ] && CMDLINE=$(cat /proc/cmdline)
 	for arg in $CMDLINE; do
 		# Set optarg to option parameter, and '' if no parameter was
 		# given
-		optarg=`expr "x$arg" : 'x[^=]*=\(.*\)' || echo ''`
+		optarg=$(expr "x$arg" : 'x[^=]*=\(.*\)' || echo '')
 		case $arg in
 			root=*)
 				ROOT_RODEVICE=$optarg ;;
 			rootfstype=*)
 				ROOT_ROFSTYPE="$optarg"
-				modprobe $optarg 2> /dev/null || \
+				modprobe "$optarg" 2> /dev/null || \
 					log "Could not load $optarg module";;
 			rootinit=*)
 				ROOT_ROINIT=$optarg ;;
@@ -55,7 +55,7 @@ read_args() {
 				ROOT_RWDEVICE=$optarg ;;
 			rootrwfstype=*)
 				ROOT_RWFSTYPE="$optarg"
-				modprobe $optarg 2> /dev/null || \
+				modprobe "$optarg" 2> /dev/null || \
 					log "Could not load $optarg module";;
 			rootrwreset=*)
 				ROOT_RWRESET=$optarg ;;
@@ -68,25 +68,25 @@ read_args() {
 }
 
 fatal() {
-	echo "rorootfs-overlay: $1" >$CONSOLE
-	echo >$CONSOLE
+	echo "rorootfs-overlay: $1" > "$CONSOLE"
+	echo > "$CONSOLE"
 	exec sh
 }
 
 log() {
-	echo "rorootfs-overlay: $1" >$CONSOLE
+	echo "rorootfs-overlay: $1" > "$CONSOLE"
 }
 
 wait_for_device() {
-    counter=0
-    while [ ! -b $1 ]; do
-        sleep .100
-        counter=$((counter + 1))
-        if [ $counter -ge 50 ]; then
-            fatal "$1 is not availble"
-            exit
-        fi
-    done
+	counter=0
+	while [ ! -b "$1" ]; do
+		sleep .100
+		counter=$((counter + 1))
+		if [ $counter -ge 50 ]; then
+			fatal "$1 is not availble"
+			exit
+		fi
+	done
 }
 
 early_setup
@@ -101,7 +101,7 @@ mount_and_boot() {
 	# Build mount options for read only root file system.
 	# If no read-only device was specified via kernel command line, use
 	# current root file system via bind mount.
-    wait_for_device ${ROOT_RODEVICE}
+	wait_for_device "${ROOT_RODEVICE}"
 	ROOT_ROMOUNTPARAMS_BIND="-o ${ROOT_ROMOUNTOPTIONS} /"
 	if [ -n "${ROOT_RODEVICE}" ]; then
 		ROOT_ROMOUNTPARAMS="-o ${ROOT_ROMOUNTOPTIONS_DEVICE} $ROOT_RODEVICE"
@@ -114,11 +114,12 @@ mount_and_boot() {
 
 	# Mount root file system to new mount-point, if unsuccessful, try bind
 	# mounting current root file system.
-	if ! $MOUNT $ROOT_ROMOUNTPARAMS "$ROOT_ROMOUNT" 2>/dev/null ; then
+	# shellcheck disable=SC2086
+	if ! $MOUNT $ROOT_ROMOUNTPARAMS "$ROOT_ROMOUNT" 2>/dev/null; then
 		log "Could not mount $ROOT_RODEVICE, bind mounting..."
 		if ! $MOUNT $ROOT_ROMOUNTPARAMS_BIND "$ROOT_ROMOUNT"; then
-            fatal "Could not mount read-only rootfs"
-        fi
+			fatal "Could not mount read-only rootfs"
+		fi
 	fi
 
 	# Remounting root file system as read only.
@@ -136,9 +137,9 @@ mount_and_boot() {
 	# Build mount options for read write root file system.
 	# If a read-write device was specified via kernel command line, use
 	# it, otherwise default to tmpfs.
-    wait_for_device ${ROOT_RWDEVICE}
+	wait_for_device "${ROOT_RWDEVICE}"
 	if [ -n "${ROOT_RWDEVICE}" ]; then
-		
+
 		ROOT_RWMOUNTPARAMS="-o $ROOT_RWMOUNTOPTIONS_DEVICE $ROOT_RWDEVICE"
 		if [ -n "${ROOT_RWFSTYPE}" ]; then
 			ROOT_RWMOUNTPARAMS="-t $ROOT_RWFSTYPE $ROOT_RWMOUNTPARAMS"
@@ -148,13 +149,14 @@ mount_and_boot() {
 	fi
 
 	# Mount read-write file system into initram root file system
-	if ! $MOUNT $ROOT_RWMOUNTPARAMS $ROOT_RWMOUNT ; then
+	# shellcheck disable=SC2086
+	if ! $MOUNT $ROOT_RWMOUNTPARAMS $ROOT_RWMOUNT; then
 		fatal "Could not mount read-write rootfs"
 	fi
 
 	# Reset read-write file system if specified
-	if [ "yes" == "$ROOT_RWRESET" -a -n "${ROOT_RWMOUNT}" ]; then
-		rm -rf $ROOT_RWMOUNT/*
+	if [ "yes" = "$ROOT_RWRESET" ] && [ -n "${ROOT_RWMOUNT}" ]; then
+		rm -rf ${ROOT_RWMOUNT:?}/*
 	fi
 
 	# Determine which unification file system to use
@@ -201,7 +203,7 @@ mount_and_boot() {
 	cd $ROOT_MOUNT
 
 	# switch to actual init in the overlay root file system
-	exec chroot $ROOT_MOUNT $INIT ||
+	exec chroot $ROOT_MOUNT "$INIT" ||
 		fatal "Couldn't chroot, dropping to shell"
 }
 
