@@ -245,16 +245,13 @@ mount_and_boot() {
 	$MOUNT -n --move $ROOT_ROMOUNT ${ROOT_MOUNT}/$ROOT_ROMOUNT
 	$MOUNT -n --move $ROOT_RWMOUNT ${ROOT_MOUNT}/$ROOT_RWMOUNT
 
-	$MOUNT -n --move /proc ${ROOT_MOUNT}/proc
-	$MOUNT -n --move /sys ${ROOT_MOUNT}/sys
-	$MOUNT -n --move /dev ${ROOT_MOUNT}/dev
-
-
-	cd $ROOT_MOUNT
+	umount /proc 2>/dev/null || true
+	umount /sys  2>/dev/null || true
+	umount /dev  2>/dev/null || true
 
 	# switch to actual init in the overlay root file system
-	exec chroot $ROOT_MOUNT "$INIT" ||
-		fatal "Couldn't chroot, dropping to shell"
+	exec switch_root "${ROOT_MOUNT}" "$INIT" ||
+		fatal "Couldn't switch_root, dropping to shell"
 }
 
 mount_and_boot
